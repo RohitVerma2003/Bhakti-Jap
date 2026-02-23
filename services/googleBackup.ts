@@ -1,42 +1,44 @@
 // services/googleBackup.ts
+// Uses @react-native-google-signin/google-signin for native in-app auth.
+// No browser — shows the native Google account picker sheet.
+
 import { loadAppData, saveAppData } from "@/storage/japStorage";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const ANDROID_CLIENT_ID =
-  "155472343207-9juf1h59peeicl49rc0n4onfq46q16so.apps.googleusercontent.com";
-
-const IOS_CLIENT_ID =
-  "155472343207-p876fsvfp8v3b4rpluoa3uvncgf9gh0d.apps.googleusercontent.com";
-
-export function useGoogleDriveAuth() {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: ANDROID_CLIENT_ID,
-    iosClientId: IOS_CLIENT_ID,
+// ─── One-time configuration ───────────────────────────────────────────────────
+// Call this once in _layout.tsx on app startup.
+// webClientId = the "Web Application" client ID from Google Cloud Console
+// (required for token exchange even on Android).
+export function configureGoogleSignIn() {
+  GoogleSignin.configure({
+    webClientId:
+      "155472343207-82fg5oennb0ffq1631c324sar6ueu8u9.apps.googleusercontent.com",
     scopes: ["https://www.googleapis.com/auth/drive.appdata"],
+    offlineAccess: false,
   });
+}
 
-  useEffect(() => {
-    if (response?.type === "success") {
-      const token = response.authentication?.accessToken;
-      if (token) setAccessToken(token);
+// ─── Get access token ─────────────────────────────────────────────────────────
+// Shows native Google account picker. Returns null if user cancels.
+
+export async function getGoogleAccessToken(): Promise<string | null> {
+  try {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    await GoogleSignin.signIn();
+    const tokens = await GoogleSignin.getTokens();
+    return tokens.accessToken;
+  } catch (error: any) {
+    if (
+      error.code === statusCodes.SIGN_IN_CANCELLED ||
+      error.code === statusCodes.IN_PROGRESS
+    ) {
+      return null; // user cancelled — not an error
     }
-    if (response?.type === "error") {
-      console.error("Google auth error:", response.error);
-    }
-  }, [response]);
-
-  const signIn = async () => {
-    setAccessToken(null);
-    await promptAsync();
-  };
-
-  return { accessToken, signIn, isReady: !!request };
+    throw error;
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -54,9 +56,6 @@ async function findBackupFileId(token: string): Promise<string | null> {
   return data.files?.[0]?.id ?? null;
 }
 
-// Manually build a multipart/related body.
-// React Native's fetch does NOT support Blob inside FormData,
-// so we construct the raw multipart string ourselves.
 function buildMultipartBody(
   metadata: object,
   fileContent: string,
@@ -85,12 +84,10 @@ export async function backupToDrive(token: string): Promise<void> {
   const metadata = {
     name: "bhakti_jap_backup.json",
     mimeType: "application/json",
-    // Only include parents on first creation, not on update
     ...(existingFileId ? {} : { parents: ["appDataFolder"] }),
   };
 
   const body = buildMultipartBody(metadata, fileContent, boundary);
-
   const url = existingFileId
     ? `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart`
     : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
@@ -106,7 +103,6 @@ export async function backupToDrive(token: string): Promise<void> {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("Backup error response:", err);
     throw new Error(`Backup failed (${res.status}): ${err}`);
   }
 }
@@ -124,7 +120,6 @@ export async function restoreFromDrive(token: string): Promise<void> {
 
   if (!fileRes.ok) {
     const err = await fileRes.text();
-    console.error("Restore error response:", err);
     throw new Error(`Restore failed (${fileRes.status}): ${err}`);
   }
 

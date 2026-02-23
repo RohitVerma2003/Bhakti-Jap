@@ -1,10 +1,15 @@
 import { useTheme } from "@/context/ThemeContext";
+import { configureGoogleSignIn } from "@/services/googleBackup";
 import { Tabs } from "expo-router";
+import { useEffect } from "react";
 import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const { theme } = useTheme();
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
 
   return (
     <SafeAreaView

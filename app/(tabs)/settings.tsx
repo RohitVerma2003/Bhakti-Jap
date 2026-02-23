@@ -1,17 +1,19 @@
+import NotificationsSection from "@/components/NotificationsSection";
 import { useTheme } from "@/context/ThemeContext";
 import {
   backupToDrive,
+  getGoogleAccessToken,
   restoreFromDrive,
-  useGoogleDriveAuth,
 } from "@/services/googleBackup";
 import {
   loadAppData,
   saveAppData,
   setUserName,
+  today,
   updateTheme,
 } from "@/storage/japStorage";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -31,7 +33,6 @@ const GOAL_OPTIONS = [108, 216, 324, 540, 1008];
 
 export default function SettingsScreen() {
   const { theme, setThemeName } = useTheme();
-  const { accessToken, signIn, isReady } = useGoogleDriveAuth();
 
   const [userName, setLocalUserName] = useState("");
   const [goal, setGoal] = useState(108);
@@ -43,49 +44,10 @@ export default function SettingsScreen() {
   const [goalDropdownVisible, setGoalDropdownVisible] = useState(false);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
 
-  // ─── Backup state ──────────────────────────────────────────────────────────
-  // pendingAction stores what to do AFTER the token arrives.
-  // This is necessary because promptAsync() returns before the token is set —
-  // the token only arrives via the useEffect in useGoogleDriveAuth.
-  const [pendingAction, setPendingAction] = useState<
-    "backup" | "restore" | null
-  >(null);
   const [driveLoading, setDriveLoading] = useState(false);
-
-  // Fires when accessToken changes (i.e. after sign-in completes)
-  useEffect(() => {
-    if (!accessToken || !pendingAction) return;
-
-    const run = async () => {
-      setDriveLoading(true);
-      try {
-        if (pendingAction === "backup") {
-          await backupToDrive(accessToken);
-          Alert.alert(
-            "✅ Backup Successful",
-            "Your data has been saved to Google Drive.",
-          );
-        } else if (pendingAction === "restore") {
-          await restoreFromDrive(accessToken);
-          await load(); // refresh UI with restored data
-          Alert.alert(
-            "✅ Restored Successfully",
-            "Your data has been loaded from Google Drive.",
-          );
-        }
-      } catch (e: any) {
-        Alert.alert(
-          "Error",
-          e?.message ?? "Something went wrong. Please try again.",
-        );
-      } finally {
-        setDriveLoading(false);
-        setPendingAction(null);
-      }
-    };
-
-    run();
-  }, [accessToken]); // ← only watch accessToken, not pendingAction
+  const [driveAction, setDriveAction] = useState<"backup" | "restore" | null>(
+    null,
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -147,46 +109,18 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             const data = await loadAppData();
+            const date = today();
+
+            data.dailyHistory[date] = 0;
             data.todayTotal = 0;
+            data.streak.current -= 1;
             data.counters = data.counters.map((c) => ({
               ...c,
+              lifetimeCount: c.lifetimeCount - c.currentCount,
               currentCount: 0,
             }));
             await saveAppData(data);
             load();
-          },
-        },
-      ],
-    );
-  };
-
-  // ─── Backup / Restore handlers ─────────────────────────────────────────────
-  // Pattern: set pendingAction first, then call signIn.
-  // When Google returns the token, the useEffect above picks up pendingAction
-  // and runs the correct operation.
-
-  const handleBackup = async () => {
-    setPendingAction("backup");
-    await signIn();
-    // ← execution continues here but token isn't available yet.
-    // The actual backup runs in useEffect when accessToken updates.
-  };
-
-  const handleRestore = () => {
-    Alert.alert(
-      "Restore from Google Drive?",
-      "This will overwrite your current local data with the backup.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => setPendingAction(null),
-        },
-        {
-          text: "Restore",
-          onPress: async () => {
-            setPendingAction("restore");
-            await signIn();
           },
         },
       ],
@@ -220,6 +154,64 @@ export default function SettingsScreen() {
     );
   };
 
+  // ─── Backup / Restore ──────────────────────────────────────────────────────
+  // getGoogleAccessToken() shows the native account picker sheet.
+  // Token is returned directly — no pendingAction pattern needed.
+
+  const handleBackup = async () => {
+    try {
+      setDriveLoading(true);
+      setDriveAction("backup");
+      const token = await getGoogleAccessToken();
+      if (!token) return; // user cancelled
+      await backupToDrive(token);
+      Alert.alert(
+        "✅ Backup Successful",
+        "Your data has been saved to Google Drive.",
+      );
+    } catch (e: any) {
+      Alert.alert("Backup Failed", e?.message ?? "Something went wrong.");
+    } finally {
+      setDriveLoading(false);
+      setDriveAction(null);
+    }
+  };
+
+  const handleRestore = () => {
+    Alert.alert(
+      "Restore from Google Drive?",
+      "This will overwrite your current local data with the backup.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Restore",
+          onPress: async () => {
+            try {
+              setDriveLoading(true);
+              setDriveAction("restore");
+              const token = await getGoogleAccessToken();
+              if (!token) return; // user cancelled
+              await restoreFromDrive(token);
+              await load();
+              Alert.alert(
+                "✅ Restored Successfully",
+                "Your data has been loaded from Google Drive.",
+              );
+            } catch (e: any) {
+              Alert.alert(
+                "Restore Failed",
+                e?.message ?? "Something went wrong.",
+              );
+            } finally {
+              setDriveLoading(false);
+              setDriveAction(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const dropdownScale = dropdownAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.92, 1],
@@ -236,7 +228,6 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
         </View>
@@ -277,60 +268,56 @@ export default function SettingsScreen() {
 
         {/* Streak banner */}
         <View style={styles.streakBanner}>
-          <View
-            style={[
-              styles.streakItem,
-              {
-                backgroundColor: theme.accent + "15",
-                borderColor: theme.accent + "35",
-              },
-            ]}
-          >
-            <Text style={styles.streakEmoji}>🔥</Text>
-            <Text style={[styles.streakVal, { color: theme.accent }]}>
-              {streak}
-            </Text>
-            <Text style={[styles.streakLbl, { color: theme.accent + "aa" }]}>
-              Current
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.streakItem,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.ringTrack + "40",
-              },
-            ]}
-          >
-            <Text style={styles.streakEmoji}>🏆</Text>
-            <Text style={[styles.streakVal, { color: theme.text }]}>
-              {longest}
-            </Text>
-            <Text style={[styles.streakLbl, { color: theme.textMuted }]}>
-              Longest
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.streakItem,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.ringTrack + "40",
-              },
-            ]}
-          >
-            <Text style={styles.streakEmoji}>🕉</Text>
-            <Text style={[styles.streakVal, { color: theme.text }]}>
-              {lifetime > 999 ? `${(lifetime / 1000).toFixed(1)}k` : lifetime}
-            </Text>
-            <Text style={[styles.streakLbl, { color: theme.textMuted }]}>
-              Lifetime
-            </Text>
-          </View>
+          {[
+            { emoji: "🔥", val: streak, lbl: "Current", accent: true },
+            { emoji: "🏆", val: longest, lbl: "Longest", accent: false },
+            {
+              emoji: "🕉",
+              val:
+                lifetime > 999 ? `${(lifetime / 1000).toFixed(1)}k` : lifetime,
+              lbl: "Lifetime",
+              accent: false,
+            },
+          ].map((item) => (
+            <View
+              key={item.lbl}
+              style={[
+                styles.streakItem,
+                item.accent
+                  ? {
+                      backgroundColor: theme.accent + "15",
+                      borderColor: theme.accent + "35",
+                    }
+                  : {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.ringTrack + "40",
+                    },
+              ]}
+            >
+              <Text style={styles.streakEmoji}>{item.emoji}</Text>
+              <Text
+                style={[
+                  styles.streakVal,
+                  { color: item.accent ? theme.accent : theme.text },
+                ]}
+              >
+                {item.val}
+              </Text>
+              <Text
+                style={[
+                  styles.streakLbl,
+                  {
+                    color: item.accent ? theme.accent + "aa" : theme.textMuted,
+                  },
+                ]}
+              >
+                {item.lbl}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {/* Practice section */}
+        {/* Practice */}
         <SectionLabel title="Practice" theme={theme} />
         <View
           style={[
@@ -389,7 +376,7 @@ export default function SettingsScreen() {
               value={isDark}
               onValueChange={toggleTheme}
               trackColor={{ false: theme.ringTrack, true: theme.accent }}
-              thumbColor={"#fff"}
+              thumbColor="#fff"
             />
           </View>
 
@@ -426,7 +413,9 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Backup section */}
+        <NotificationsSection theme={theme} />
+
+        {/* Backup & Restore */}
         <SectionLabel title="Backup & Restore" theme={theme} />
         <View
           style={[
@@ -441,7 +430,7 @@ export default function SettingsScreen() {
             style={[styles.row, { borderBottomColor: theme.ringTrack + "35" }]}
             onPress={handleBackup}
             activeOpacity={0.7}
-            disabled={isBusy || !isReady}
+            disabled={isBusy}
           >
             <View style={styles.rowIconGroup}>
               <View style={[styles.rowIcon, { backgroundColor: "#4285F420" }]}>
@@ -449,7 +438,7 @@ export default function SettingsScreen() {
               </View>
               <View>
                 <Text style={[styles.rowLabel, { color: theme.text }]}>
-                  {driveLoading && pendingAction === "backup"
+                  {driveLoading && driveAction === "backup"
                     ? "Backing up…"
                     : "Backup to Google Drive"}
                 </Text>
@@ -472,7 +461,7 @@ export default function SettingsScreen() {
             style={[styles.row, { borderBottomColor: "transparent" }]}
             onPress={handleRestore}
             activeOpacity={0.7}
-            disabled={isBusy || !isReady}
+            disabled={isBusy}
           >
             <View style={styles.rowIconGroup}>
               <View style={[styles.rowIcon, { backgroundColor: "#34A85320" }]}>
@@ -480,7 +469,7 @@ export default function SettingsScreen() {
               </View>
               <View>
                 <Text style={[styles.rowLabel, { color: theme.text }]}>
-                  {driveLoading && pendingAction === "restore"
+                  {driveLoading && driveAction === "restore"
                     ? "Restoring…"
                     : "Restore from Google Drive"}
                 </Text>
@@ -500,7 +489,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* About section */}
+        {/* About */}
         <SectionLabel title="About" theme={theme} />
         <View
           style={[
@@ -534,7 +523,7 @@ export default function SettingsScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Goal Dropdown Modal */}
+      {/* Goal Modal */}
       <Modal
         visible={goalDropdownVisible}
         transparent
@@ -561,7 +550,6 @@ export default function SettingsScreen() {
             <Text style={[styles.sheetSubtitle, { color: theme.textMuted }]}>
               How many chants per session?
             </Text>
-
             <View style={styles.goalGrid}>
               {GOAL_OPTIONS.map((g) => {
                 const isSelected = goal === g;
@@ -601,7 +589,6 @@ export default function SettingsScreen() {
                 );
               })}
             </View>
-
             <TouchableOpacity
               style={[
                 styles.sheetClose,
@@ -636,10 +623,8 @@ const SectionLabel = ({ title, theme }: any) => (
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingBottom: 40 },
-
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 },
   title: { fontSize: 28, fontWeight: "700", letterSpacing: 0.2 },
-
   profileCard: {
     marginHorizontal: 20,
     borderRadius: 20,
@@ -667,7 +652,6 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   profileSub: { fontSize: 12 },
-
   streakBanner: {
     flexDirection: "row",
     paddingHorizontal: 20,
@@ -690,7 +674,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
-
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
@@ -700,7 +683,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-
   card: {
     marginHorizontal: 20,
     borderRadius: 20,
@@ -742,7 +724,6 @@ const styles = StyleSheet.create({
   },
   goalBadgeText: { fontSize: 14, fontWeight: "700" },
   chevron: { fontSize: 20, fontWeight: "300" },
-
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

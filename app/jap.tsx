@@ -1,4 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
+import { updateWidget } from "@/services/widgetBridge";
 import {
   decrementCounter,
   incrementCounter,
@@ -65,6 +66,12 @@ export default function JapScreen() {
       0,
     );
     setTodaysTotal(totalToday);
+
+    const lifetimeCount = data.counters.reduce(
+      (sum, c) => sum + c.lifetimeCount,
+      0,
+    );
+    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const playBell = async () => {
@@ -129,6 +136,12 @@ export default function JapScreen() {
     setMalasToday(Math.floor(active.currentCount / active.dailyGoal));
     setStreak(data.streak.current);
     setTodaysTotal(data.todayTotal);
+
+    const lifetimeCount = data.counters.reduce(
+      (sum, c) => sum + c.lifetimeCount,
+      0,
+    );
+    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const handleDecrement = async () => {
@@ -151,6 +164,12 @@ export default function JapScreen() {
     setMalasToday(Math.floor(active.currentCount / active.dailyGoal));
     setStreak(data.streak.current);
     setTodaysTotal(data.todayTotal);
+
+    const lifetimeCount = data.counters.reduce(
+      (sum, c) => sum + c.lifetimeCount,
+      0,
+    );
+    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const progress = dailyGoal > 0 ? Math.min(count / dailyGoal, 1) : 0;
