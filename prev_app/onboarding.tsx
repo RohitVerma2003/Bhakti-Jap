@@ -1,21 +1,25 @@
-import { useTheme } from "@/context/ThemeContext";
-import { loadAppData, saveAppData } from "@/storage/japStorage";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../context/ThemeContext";
+import {
+    saveDailyGoal,
+    saveUserName,
+    setOnboardingDone,
+} from "../storage/japStorage";
 
 const { width } = Dimensions.get("window");
 
@@ -27,41 +31,24 @@ const GOALS = [
 ];
 
 export default function OnboardingScreen() {
-  const { theme, themeName } = useTheme();
-
+  const { theme } = useTheme();
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [goal, setGoal] = useState(108);
-
   const inputRef = useRef<TextInput>(null);
 
   const handleFinish = async () => {
-    const data = await loadAppData();
-
-    // Save user name
-    data.userName = name.trim() || "Devotee";
-
-    // Update active counter goal
-    const activeCounter = data.counters.find(
-      (c) => c.id === data.activeCounterId,
-    );
-
-    data.globalDailyGoal = goal;
-
-    // Mark onboarding complete
-    data.onboardingDone = true;
-
-    await saveAppData(data);
-
-    router.replace("/(tabs)");
+    await saveUserName(name.trim());
+    await saveDailyGoal(goal);
+    await setOnboardingDone();
+    router.replace("/");
   };
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
       <StatusBar
-        barStyle={themeName === "dark" ? "light-content" : "dark-content"}
+        barStyle={theme.name === "dark" ? "light-content" : "dark-content"}
       />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -71,8 +58,14 @@ export default function OnboardingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ───── Sacred Banner ───── */}
+          {/* ── Banner ── */}
           <View style={styles.bannerContainer}>
+            <View
+              style={[styles.glowOuter, { backgroundColor: theme.accentSoft }]}
+            />
+            <View
+              style={[styles.glowInner, { backgroundColor: theme.accentSoft }]}
+            />
             <Text style={[styles.omSymbol, { color: theme.accent }]}>ॐ</Text>
             <View style={[styles.divider, { backgroundColor: theme.accent }]} />
             <Text style={[styles.appName, { color: theme.text }]}>
@@ -83,7 +76,7 @@ export default function OnboardingScreen() {
             </Text>
           </View>
 
-          {/* ───── Step Indicators ───── */}
+          {/* ── Step dots ── */}
           <View style={styles.dotsRow}>
             <View style={[styles.dot, { backgroundColor: theme.accent }]} />
             <View
@@ -96,19 +89,17 @@ export default function OnboardingScreen() {
             />
           </View>
 
-          {/* ───── STEP 1: Name ───── */}
+          {/* ── STEP 1: Name ── */}
           {step === 1 && (
             <View style={styles.stepContainer}>
               <Text style={[styles.stepLabel, { color: theme.textMuted }]}>
                 STEP 1 OF 2
               </Text>
-
               <Text style={[styles.stepTitle, { color: theme.text }]}>
                 What shall we{"\n"}call you?
               </Text>
-
               <Text style={[styles.stepDesc, { color: theme.textMuted }]}>
-                Your name personalizes your daily practice.
+                Your name will personalize your daily practice.
               </Text>
 
               <TouchableOpacity
@@ -123,8 +114,7 @@ export default function OnboardingScreen() {
                 onPress={() => inputRef.current?.focus()}
                 activeOpacity={1}
               >
-                <Text style={{ fontSize: 18 }}>🙏</Text>
-
+                <Text style={{ fontSize: 20 }}>🙏</Text>
                 <TextInput
                   ref={inputRef}
                   value={name}
@@ -137,6 +127,9 @@ export default function OnboardingScreen() {
                   onSubmitEditing={() => setStep(2)}
                   maxLength={30}
                 />
+                {name.length > 0 && (
+                  <Text style={[{ fontSize: 18, color: theme.accent }]}>✓</Text>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -157,6 +150,7 @@ export default function OnboardingScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setStep(2);
                 }}
+                activeOpacity={0.8}
               >
                 <Text
                   style={[
@@ -184,20 +178,18 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* ───── STEP 2: Goal ───── */}
+          {/* ── STEP 2: Goal ── */}
           {step === 2 && (
             <View style={styles.stepContainer}>
               <Text style={[styles.stepLabel, { color: theme.textMuted }]}>
                 STEP 2 OF 2
               </Text>
-
               <Text style={[styles.stepTitle, { color: theme.text }]}>
                 {name.trim()
                   ? `${name.trim()},\nset your daily`
                   : "Set your daily"}
                 {"\n"}jap goal
               </Text>
-
               <Text style={[styles.stepDesc, { color: theme.textMuted }]}>
                 How many times would you like to chant each day?
               </Text>
@@ -223,13 +215,12 @@ export default function OnboardingScreen() {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         setGoal(g.value);
                       }}
+                      activeOpacity={0.75}
                     >
                       <Text
                         style={[
                           styles.goalNumber,
-                          {
-                            color: selected ? theme.background : theme.accent,
-                          },
+                          { color: selected ? theme.background : theme.accent },
                         ]}
                       >
                         {g.label}
@@ -251,12 +242,22 @@ export default function OnboardingScreen() {
                 })}
               </View>
 
+              <View
+                style={[styles.infoBox, { backgroundColor: theme.surface }]}
+              >
+                <Text style={[styles.infoText, { color: theme.textMuted }]}>
+                  🕉 108 is sacred in Hindu tradition — the number of beads on a
+                  mala.
+                </Text>
+              </View>
+
               <TouchableOpacity
                 style={[styles.primaryBtn, { backgroundColor: theme.accent }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   handleFinish();
                 }}
+                activeOpacity={0.8}
               >
                 <Text
                   style={[styles.primaryBtnText, { color: theme.background }]}
@@ -285,63 +286,88 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flexGrow: 1, paddingBottom: 48 },
 
+  // Banner
   bannerContainer: {
     alignItems: "center",
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingTop: 52,
+    paddingBottom: 28,
+  },
+  glowOuter: {
+    position: "absolute",
+    top: 20,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    opacity: 0.4,
+  },
+  glowInner: {
+    position: "absolute",
+    top: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    opacity: 0.7,
   },
   omSymbol: {
-    fontSize: 90,
+    fontSize: 96,
+    lineHeight: 116,
     fontWeight: "200",
   },
   divider: {
-    width: 40,
-    height: 1,
+    width: 36,
+    height: 1.5,
     borderRadius: 1,
     marginVertical: 14,
     opacity: 0.5,
   },
   appName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "200",
-    letterSpacing: 4,
+    letterSpacing: 5,
   },
   appTagline: {
     fontSize: 13,
+    letterSpacing: 0.4,
     marginTop: 8,
   },
 
+  // Dots
   dotsRow: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   dot: {
-    width: 22,
+    width: 24,
     height: 4,
     borderRadius: 2,
   },
 
+  // Step
   stepContainer: {
     paddingHorizontal: 28,
   },
   stepLabel: {
     fontSize: 11,
-    letterSpacing: 1.5,
-    marginBottom: 10,
+    letterSpacing: 1.8,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   stepTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "200",
-    lineHeight: 34,
+    lineHeight: 36,
+    letterSpacing: 0.2,
     marginBottom: 10,
   },
   stepDesc: {
     fontSize: 14,
+    lineHeight: 21,
     marginBottom: 28,
   },
 
+  // Input
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,11 +385,12 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
+  // Goal grid
   goalGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   goalCard: {
     width: (width - 56 - 12) / 2,
@@ -371,10 +398,20 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     padding: 20,
     alignItems: "center",
+    gap: 4,
   },
   goalNumber: { fontSize: 30, fontWeight: "200" },
-  goalSub: { fontSize: 12, marginTop: 4 },
+  goalSub: { fontSize: 12, letterSpacing: 0.3 },
 
+  // Info box
+  infoBox: {
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 24,
+  },
+  infoText: { fontSize: 12, lineHeight: 18 },
+
+  // Buttons
   primaryBtn: {
     borderRadius: 22,
     paddingVertical: 16,
@@ -384,13 +421,8 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 16,
     fontWeight: "500",
+    letterSpacing: 0.5,
   },
-
-  skipBtn: {
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  skipText: {
-    fontSize: 13,
-  },
+  skipBtn: { alignItems: "center", paddingVertical: 6 },
+  skipText: { fontSize: 13 },
 });

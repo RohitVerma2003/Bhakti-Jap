@@ -1,85 +1,54 @@
-import { Tabs, router } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ThemeName } from "../constants/themes";
-import { ThemeProvider, useTheme } from "../context/ThemeContext";
-import { loadJapData } from "../storage/japStorage";
-
-function TabLayout({ onboardingDone }: { onboardingDone: boolean }) {
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    if (!onboardingDone) {
-      router.replace("/onboarding");
-    }
-  }, [onboardingDone]);
-
-  return (
-    <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.ringTrack,
-          borderTopWidth: 1,
-          paddingBottom: 8,
-          height: 64,
-        },
-        tabBarActiveTintColor: theme.accent,
-        tabBarInactiveTintColor: theme.textMuted,
-        tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.5, marginBottom: 4 },
-        tabBarIcon: ({ color }) => {
-          const icons: Record<string, string> = {
-            index: "ॐ",
-            analytics: "◎",
-            settings: "⚙",
-          };
-          return (
-            <Text style={{ fontSize: 20, color }}>
-              {icons[route.name] ?? ""}
-            </Text>
-          );
-        },
-      })}
-    >
-      <Tabs.Screen name="index" options={{ title: "Jap" }} />
-      <Tabs.Screen name="analytics" options={{ title: "Sadhana" }} />
-      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
-      <Tabs.Screen
-        name="onboarding"
-        options={{ href: null, headerShown: false }}
-      />
-      <Tabs.Screen name="modal" options={{ href: null, headerShown: false }} />
-    </Tabs>
-  );
-}
+import { ThemeProvider } from "@/context/ThemeContext";
+import { loadAppData } from "@/storage/japStorage";
+import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
-  const [initialTheme, setInitialTheme] = useState<ThemeName>("dark");
-  const [onboardingDone, setOnboardingDone] = useState(true); // default true avoids flash
+  const [initialTheme, setInitialTheme] = useState<"dark" | "saffron">(
+    "saffron",
+  );
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    loadJapData().then((d) => {
-      if (d.theme === "saffron" || d.theme === "dark") {
-        setInitialTheme(d.theme as ThemeName);
+    loadAppData().then((data) => {
+      if (data.theme === "dark" || data.theme === "saffron") {
+        setInitialTheme(data.theme);
       }
-      setOnboardingDone(d.onboardingDone);
       setReady(true);
     });
   }, []);
 
-  // Show plain dark bg while loading — avoids white flash
-  if (!ready) {
-    return <View style={{ flex: 1, backgroundColor: "#0F0F12" }} />;
-  }
-
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaProvider>
       <ThemeProvider initialTheme={initialTheme}>
-        <TabLayout onboardingDone={onboardingDone} />
+        {/* Always render Stack immediately */}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "fade",
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        </Stack>
+
+        {/* Overlay loading screen */}
+        {!ready && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "#0F0F12",
+            }}
+          />
+        )}
       </ThemeProvider>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

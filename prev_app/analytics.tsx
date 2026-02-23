@@ -3,7 +3,7 @@ import React, { useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
-import { loadJapData } from "../storage/japStorage";
+import { loadAppData } from "../storage/japStorage";
 
 function StatCard({
   label,
@@ -50,7 +50,7 @@ export default function AnalyticsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadJapData().then((d) => {
+      loadAppData().then((d) => {
         setData({
           todayCount: d.currentCount,
           malasToday: d.malasToday,

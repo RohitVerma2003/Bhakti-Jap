@@ -1,18 +1,18 @@
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SacredButton from "../components/SacredButton";
 import { ThemeName } from "../constants/themes";
 import { useTheme } from "../context/ThemeContext";
-import { loadJapData, saveDailyGoal } from "../storage/japStorage";
+import { loadAppData, saveDailyGoal } from "../storage/japStorage";
 
 const GOALS = [54, 108, 216, 324, 1008];
 const THEMES: { name: ThemeName; label: string; preview: string }[] = [
@@ -61,7 +61,7 @@ export default function SettingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadJapData().then((d) => setSelectedGoal(d.dailyGoal));
+      loadAppData().then((d) => setSelectedGoal(d.dailyGoal));
     }, []),
   );
 

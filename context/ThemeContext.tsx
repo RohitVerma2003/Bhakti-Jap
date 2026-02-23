@@ -1,11 +1,6 @@
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useState
-} from "react";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 import { Theme, ThemeName, themes } from "../constants/themes";
-import { saveTheme } from "../storage/japStorage";
+import { updateTheme } from "../storage/japStorage";
 
 interface ThemeContextType {
   theme: Theme;
@@ -15,13 +10,13 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: themes.dark,
-  themeName: "dark",
+  themeName: "saffron",
   setThemeName: () => {},
 });
 
 export function ThemeProvider({
   children,
-  initialTheme = "dark",
+  initialTheme = "saffron",
 }: {
   children: ReactNode;
   initialTheme?: ThemeName;
@@ -30,7 +25,7 @@ export function ThemeProvider({
 
   const setThemeName = (name: ThemeName) => {
     setThemeNameState(name);
-    saveTheme(name);
+    updateTheme(name);
   };
 
   return (

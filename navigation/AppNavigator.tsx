@@ -7,7 +7,7 @@ import AnalyticsScreen from "../screens/AnalyticsScreen";
 import JapScreen from "../screens/JapScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
 import SettingsScreen from "../screens/SettingsScreen";
-import { JapData, loadJapData } from "../storage/japStorage";
+import { JapData, loadAppData } from "../storage/japStorage";
 
 const Tab = createBottomTabNavigator();
 
@@ -17,7 +17,7 @@ export default function AppNavigator() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadJapData().then((d) => {
+    loadAppData().then((d) => {
       setData(d);
       setLoading(false);
     });

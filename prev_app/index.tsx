@@ -8,10 +8,10 @@ import MalaRing from "../components/MalaRing";
 import SacredButton from "../components/SacredButton";
 import { useTheme } from "../context/ThemeContext";
 import {
-  loadJapData,
-  resetDailyCount,
-  saveCount,
-  saveMalaCompleted,
+    loadAppData,
+    resetDailyCount,
+    saveCount,
+    saveMalaCompleted,
 } from "../storage/japStorage";
 
 export default function JapScreen() {
@@ -28,7 +28,7 @@ export default function JapScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadJapData().then((d) => {
+      loadAppData().then((d) => {
         setDailyGoal(d.dailyGoal);
         setCount(d.currentCount);
         setMalasToday(d.malasToday);
