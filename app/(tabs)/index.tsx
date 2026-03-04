@@ -1,4 +1,3 @@
-import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { loadAppData, saveAppData } from "@/storage/japStorage";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -39,7 +38,6 @@ export default function index() {
   const [newMantraGoal, setNewMantraGoal] = useState("108");
   const [todayTotal, setTodayTotal] = useState(0);
 
-  const { isPro, canAddCounter } = useSubscription();
   const [paywallVisible, setPaywallVisible] = useState(false);
 
   const modalAnim = useRef(new Animated.Value(0)).current;
@@ -100,35 +98,29 @@ export default function index() {
 
   const confirmAddCounter = async () => {
     if (!newMantraName.trim()) return;
+    const data = await loadAppData();
 
-    if (!canAddCounter(counters.length)) {
-      // Free user hitting the limit — show paywall instead of the add modal
-      setPaywallVisible(true);
-    } else {
-      const data = await loadAppData();
+    const id = `mantra_${Date.now()}`;
 
-      const id = `mantra_${Date.now()}`;
+    const today = new Date().toISOString().split("T")[0];
 
-      const today = new Date().toISOString().split("T")[0];
+    data.counters.push({
+      id,
+      name: newMantraName.trim(),
+      dailyGoal: parseInt(newMantraGoal) || 108,
+      currentCount: 0,
+      lifetimeCount: 0,
+      lastUpdated: today,
+    });
 
-      data.counters.push({
-        id,
-        name: newMantraName.trim(),
-        dailyGoal: parseInt(newMantraGoal) || 108,
-        currentCount: 0,
-        lifetimeCount: 0,
-        lastUpdated: today,
-      });
+    data.activeCounterId = id;
 
-      data.activeCounterId = id;
+    await saveAppData(data);
 
-      await saveAppData(data);
+    closeModal();
 
-      closeModal();
-
-      setCounters([...data.counters]);
-      setActiveId(id);
-    }
+    setCounters([...data.counters]);
+    setActiveId(id);
   };
 
   const totalLifetime = counters.reduce((sum, c) => sum + c.lifetimeCount, 0);

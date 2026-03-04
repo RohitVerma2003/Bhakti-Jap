@@ -22,7 +22,7 @@ export const themes: Record<ThemeName, Theme> = {
     background: "#0F0F12",
     surface: "#1A1A20",
     surfaceAlt: "#22222A",
-    accent: "#C6A85E",
+    accent: "#E07A24",
     accentSoft: "rgba(198,168,94,0.15)",
     text: "#F5F1E6",
     textMuted: "rgba(245,241,230,0.45)",

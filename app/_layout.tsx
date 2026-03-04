@@ -1,4 +1,3 @@
-import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import {
   applyNotifPrefs,
@@ -33,35 +32,33 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <SubscriptionProvider>
-        <ThemeProvider initialTheme={initialTheme}>
-          {/* Always render Stack immediately */}
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "fade",
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-          </Stack>
+      <ThemeProvider initialTheme={initialTheme}>
+        {/* Always render Stack immediately */}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "fade",
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        </Stack>
 
-          {/* Overlay loading screen */}
-          {!ready && (
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: "#0F0F12",
-              }}
-            />
-          )}
-        </ThemeProvider>
-      </SubscriptionProvider>
+        {/* Overlay loading screen */}
+        {!ready && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "#0F0F12",
+            }}
+          />
+        )}
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
