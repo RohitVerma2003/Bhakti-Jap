@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — Bhakti Jap</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --saffron: #FF9933;
+            --saffron-deep: #CC6600;
+            --saffron-pale: #FFF3E0;
+            --saffron-glow: #FF993322;
+            --ink: #1A0A00;
+            --ink-mid: #3D1F00;
+            --ink-light: #7A4A1E;
+            --cream: #FDF6EC;
+            --cream-dark: #F5E8D0;
+            --divider: #E8C99A;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--cream);
+            color: var(--ink);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Noise texture overlay ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Decorative mandala bg ── */
+        body::after {
+            content: '🕉';
+            position: fixed;
+            right: -80px;
+            top: 50%;
+            transform: translateY(-50%) rotate(15deg);
+            font-size: 420px;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+            line-height: 1;
+        }
+
+        /* ── Header ── */
+        header {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(160deg, var(--ink) 0%, var(--ink-mid) 100%);
+            color: var(--cream);
+            padding: 60px 40px 50px;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: var(--cream);
+            clip-path: ellipse(55% 100% at 50% 100%);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 60% 80% at 80% 50%, #FF993318 0%, transparent 70%),
+                radial-gradient(ellipse 40% 60% at 20% 20%, #FF993310 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .header-inner {
+            max-width: 780px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--saffron-glow);
+            border: 1px solid #FF993340;
+            border-radius: 100px;
+            padding: 6px 16px 6px 10px;
+            margin-bottom: 28px;
+            animation: fadeSlideDown 0.6s ease both;
+        }
+
+        .app-badge .om {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .app-badge span {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--saffron);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(42px, 6vw, 68px);
+            font-weight: 300;
+            line-height: 1.08;
+            letter-spacing: -0.02em;
+            color: var(--cream);
+            margin-bottom: 20px;
+            animation: fadeSlideDown 0.6s 0.1s ease both;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--saffron);
+        }
+
+        .header-meta {
+            font-size: 13px;
+            font-weight: 300;
+            color: #FFFFFF80;
+            animation: fadeSlideDown 0.6s 0.2s ease both;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-meta span::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--saffron);
+            flex-shrink: 0;
+        }
+
+        /* ── Layout ── */
+        .page-wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 60px 40px 100px;
+        }
+
+        /* ── TOC ── */
+        .toc {
+            background: white;
+            border: 1px solid var(--divider);
+            border-radius: 20px;
+            padding: 28px 32px;
+            margin-bottom: 56px;
+            box-shadow: 0 2px 20px #CC660008;
+            animation: fadeSlideUp 0.6s 0.3s ease both;
+        }
+
+        .toc-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--saffron-deep);
+            margin-bottom: 16px;
+        }
+
+        .toc ol {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 32px;
+        }
+
+        @media (max-width: 560px) {
+            .toc ol {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toc li {
+            counter-increment: toc-counter;
+        }
+
+        .toc a {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--ink-light);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .toc a:hover {
+            color: var(--saffron-deep);
+        }
+
+        .toc a::before {
+            content: counter(toc-counter, decimal-leading-zero);
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--saffron);
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Sections ── */
+        section {
+            margin-bottom: 52px;
+            animation: fadeSlideUp 0.5s ease both;
+        }
+
+        section:nth-child(2) {
+            animation-delay: 0.35s;
+        }
+
+        section:nth-child(3) {
+            animation-delay: 0.40s;
+        }
+
+        section:nth-child(4) {
+            animation-delay: 0.45s;
+        }
+
+        section:nth-child(5) {
+            animation-delay: 0.50s;
+        }
+
+        section:nth-child(6) {
+            animation-delay: 0.55s;
+        }
+
+        section:nth-child(7) {
+            animation-delay: 0.60s;
+        }
+
+        section:nth-child(8) {
+            animation-delay: 0.65s;
+        }
+
+        section:nth-child(9) {
+            animation-delay: 0.70s;
+        }
+
+        section:nth-child(10) {
+            animation-delay: 0.75s;
+        }
+
+        .section-num {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--saffron);
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(24px, 3.5vw, 32px);
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        p {
+            font-size: 15px;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--ink-mid);
+            margin-bottom: 14px;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── Highlight cards ── */
+        .card {
+            background: white;
+            border: 1px solid var(--divider);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin: 20px 0;
+            box-shadow: 0 1px 12px #CC660006;
+        }
+
+        .card.accent {
+            background: linear-gradient(135deg, #FFF8F0 0%, #FFF3E0 100%);
+            border-color: #FFBB6640;
+        }
+
+        .card ul,
+        .card ol {
+            padding-left: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .card li {
+            font-size: 14px;
+            font-weight: 300;
+            line-height: 1.6;
+            color: var(--ink-mid);
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .card li::before {
+            content: '—';
+            position: absolute;
+            left: 0;
+            color: var(--saffron);
+            font-weight: 400;
+        }
+
+        .card-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--saffron-deep);
+            margin-bottom: 14px;
+        }
+
+        /* ── Emphasis inline ── */
+        strong {
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        /* ── Contact block ── */
+        .contact-block {
+            background: linear-gradient(135deg, var(--ink) 0%, var(--ink-mid) 100%);
+            border-radius: 20px;
+            padding: 36px 40px;
+            color: var(--cream);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-block::before {
+            content: '🕉';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 120px;
+            opacity: 0.06;
+            line-height: 1;
+        }
+
+        .contact-block p {
+            color: #FFFFFFAA;
+            margin-bottom: 16px;
+        }
+
+        .contact-block a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--saffron);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 100px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .contact-block a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px #FF993340;
+        }
+
+        /* ── Divider ornament ── */
+        .ornament {
+            text-align: center;
+            color: var(--saffron);
+            font-size: 18px;
+            opacity: 0.5;
+            margin: 48px 0;
+            letter-spacing: 12px;
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            background: var(--ink);
+            color: #FFFFFF50;
+            text-align: center;
+            padding: 32px 20px;
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        footer strong {
+            color: var(--saffron);
+            font-weight: 500;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            header {
+                padding: 44px 24px 42px;
+            }
+
+            .page-wrap {
+                padding: 44px 24px 80px;
+            }
+
+            .contact-block {
+                padding: 28px 24px;
+            }
+        }
+
+        /* ── Scroll progress bar ── */
+        #progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--saffron-deep), var(--saffron));
+            width: 0%;
+            z-index: 100;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="progress-bar"></div>
+
+    <!-- ── HEADER ── -->
+    <header>
+        <div class="header-inner">
+            <div class="app-badge">
+                <span class="om">🕉</span>
+                <span>Bhakti Jap</span>
+            </div>
+            <h1>Privacy <em>Policy</em></h1>
+            <div class="header-meta">
+                <span>Effective: January 1, 2025</span>
+                <span>Last updated: March 2026</span>
+                <span>Version 1.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── CONTENT ── -->
+    <main class="page-wrap">
+
+        <!-- Intro -->
+        <p
+            style="font-size:16px; line-height:1.9; margin-bottom:40px; animation: fadeSlideUp 0.6s 0.25s ease both; opacity:0; animation-fill-mode:both;">
+            Bhakti Jap ("we", "our", or "the app") is a personal mantra counting application built with devotion and
+            respect for your privacy. This policy explains clearly what data we collect, what we don't, and how your
+            spiritual practice data is handled.
+        </p>
+
+        <!-- TOC -->
+        <div class="toc">
+            <div class="toc-title">Contents</div>
+            <ol>
+                <li><a href="#s1">Data We Collect</a></li>
+                <li><a href="#s2">Data We Do Not Collect</a></li>
+                <li><a href="#s3">Local Storage</a></li>
+                <li><a href="#s4">Google Drive Backup</a></li>
+                <li><a href="#s5">Notifications</a></li>
+                <li><a href="#s6">Analytics & Ads</a></li>
+                <li><a href="#s8">Children's Privacy</a></li>
+                <li><a href="#s9">Changes to Policy</a></li>
+                <li><a href="#s10">Contact Us</a></li>
+            </ol>
+        </div>
+
+        <!-- 1 -->
+        <section id="s1">
+            <div class="section-num">01</div>
+            <h2>Data We Collect</h2>
+            <p>Bhakti Jap is designed to work entirely on your device. The only data involved in the app's core function
+                is your personal practice data — mantra counts, daily goals, streaks, and your name — all of which is
+                stored exclusively on your device.</p>
+            <div class="card accent">
+                <div class="card-label">Data stored on your device only</div>
+                <ul>
+                    <li>Mantra counter names and daily goal settings</li>
+                    <li>Your daily and lifetime chant counts</li>
+                    <li>Streak history and last completed date</li>
+                    <li>Your display name (optional)</li>
+                    <li>Theme preference (saffron or dark)</li>
+                    <li>Notification time preferences</li>
+                </ul>
+            </div>
+            <p>None of this data is transmitted to us or any third party unless you explicitly choose to back it up to
+                your own Google Drive account.</p>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 2 -->
+        <section id="s2">
+            <div class="section-num">02</div>
+            <h2>Data We Do Not Collect</h2>
+            <p>We have deliberately built Bhakti Jap to require as little data as possible. The following are things we
+                <strong>never</strong> collect:</p>
+            <div class="card">
+                <ul>
+                    <li>Your real name, email address, or any identity information</li>
+                    <li>Device identifiers, advertising IDs, or fingerprints</li>
+                    <li>Location data of any kind</li>
+                    <li>Usage analytics, session recordings, or crash reports sent to us</li>
+                    <li>Contact lists, camera, microphone, or any unrelated device access</li>
+                    <li>Any data about your religious beliefs or practices beyond what you enter</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 3 -->
+        <section id="s3">
+            <div class="section-num">03</div>
+            <h2>Local Storage</h2>
+            <p>All your practice data is stored using <strong>AsyncStorage</strong> on your device — the same secure,
+                sandboxed storage used by all iOS and Android applications. This data is:</p>
+            <div class="card">
+                <ul>
+                    <li>Only accessible by the Bhakti Jap app — no other app can read it</li>
+                    <li>Deleted automatically if you uninstall the app</li>
+                    <li>Never synced automatically to any cloud service without your action</li>
+                    <li>Not shared with us or any server at any time</li>
+                </ul>
+            </div>
+            <p>Your Android home screen widget reads this data locally on-device via SharedPreferences — the same
+                sandboxed system. It does not transmit any data externally.</p>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 4 -->
+        <section id="s4">
+            <div class="section-num">04</div>
+            <h2>Google Drive Backup</h2>
+            <p>Bhakti Jap offers an optional backup feature that saves your data to your own personal Google Drive. This
+                is entirely opt-in — nothing is backed up unless you tap the backup button.</p>
+            <div class="card accent">
+                <div class="card-label">How it works</div>
+                <ul>
+                    <li>You sign in with your Google account via Google's official Sign-In SDK</li>
+                    <li>Your data is saved to a private <strong>appDataFolder</strong> in your own Drive — invisible to
+                        you in Drive UI and inaccessible to any other app</li>
+                    <li>We never see, store, or have access to your Google credentials or Drive data</li>
+                    <li>The backup file contains only your mantra counts, streak, and settings — nothing else</li>
+                    <li>You can delete the backup at any time from Google Drive settings</li>
+                </ul>
+            </div>
+            <p>Your use of Google Drive backup is also subject to <a href="https://policies.google.com/privacy"
+                    style="color:var(--saffron-deep);">Google's Privacy Policy</a>.</p>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 5 -->
+        <section id="s5">
+            <div class="section-num">05</div>
+            <h2>Notifications</h2>
+            <p>Bhakti Jap can send you local push notifications — daily practice reminders and streak nudges. These are
+                scheduled entirely on your device by the operating system.</p>
+            <div class="card">
+                <ul>
+                    <li>Notifications work completely offline — no server is involved</li>
+                    <li>No notification content or interaction data is sent to us</li>
+                    <li>You can enable, disable, or change notification times at any time in Settings</li>
+                    <li>Notification permission can be revoked in your device's system settings</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 6 -->
+        <section id="s6">
+            <div class="section-num">06</div>
+            <h2>Analytics &amp; Advertising</h2>
+            <p>Bhakti Jap contains <strong>no analytics tools, no tracking SDKs, and no advertisements</strong> of any
+                kind. We do not use Firebase Analytics, Facebook SDK, Mixpanel, or any similar service.</p>
+            <p>We do not sell, rent, or share any data with advertisers or data brokers — because we do not collect any
+                data to share.</p>
+            <div class="card accent">
+                <div class="card-label">Our commitment</div>
+                <ul>
+                    <li>No ads — ever</li>
+                    <li>No tracking — ever</li>
+                    <li>No data selling — ever</li>
+                </ul>
+            </div>
+        </section>
+
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 8 -->
+        <section id="s8">
+            <div class="section-num">07</div>
+            <h2>Children's Privacy</h2>
+            <p>Bhakti Jap does not knowingly collect personal information from children under the age of 13. The app
+                does not require account creation, age verification, or any personal information to function. If you
+                believe a child has provided personal information through the app, please contact us and we will ensure
+                it is removed.</p>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 9 -->
+        <section id="s9">
+            <div class="section-num">08</div>
+            <h2>Changes to This Policy</h2>
+            <p>We may update this privacy policy from time to time. When we do, we will update the "last updated" date
+                at the top of this page and, for material changes, notify you within the app. Your continued use of
+                Bhakti Jap after changes constitutes acceptance of the updated policy.</p>
+            <p>We will never introduce data collection practices that conflict with this policy's core commitment: your
+                spiritual practice data belongs to you.</p>
+        </section>
+
+        <div class="ornament">· · ·</div>
+
+        <!-- 10 -->
+        <section id="s10">
+            <div class="section-num">09</div>
+            <h2>Contact Us</h2>
+            <p>If you have any questions, concerns, or requests regarding this privacy policy or your data, please reach
+                out:</p>
+            <div class="contact-block">
+                <p>We are committed to responding to all privacy-related inquiries within 48 hours. Your trust and peace
+                    of mind matter to us.</p>
+                <a href="mailto:rvermajio78300@gmail.com">✉ rvermajio78300@gmail.com</a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+        <p>© 2026 <strong>Bhakti Jap</strong> · Made with ❤️ by Rohit · All rights reserved</p>
+        <p style="margin-top:8px; font-size:11px;">🕉 Your practice, your data, your peace.</p>
+    </footer>
+
+    <script>
+        // Scroll progress bar
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+            document.getElementById('progress-bar').style.width = pct + '%';
+        });
+    </script>
+
+</body>
+
+</html>
