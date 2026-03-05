@@ -15,7 +15,7 @@ import {
 export function configureGoogleSignIn() {
   GoogleSignin.configure({
     webClientId:
-      "155472343207-82fg5oennb0ffq1631c324sar6ueu8u9.apps.googleusercontent.com",
+      "155472343207-rd3f9r01i01e0tv0akcitjef1jlo0nq1.apps.googleusercontent.com",
     scopes: ["https://www.googleapis.com/auth/drive.appdata"],
     offlineAccess: false,
   });
