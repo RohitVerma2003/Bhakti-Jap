@@ -1,11 +1,10 @@
 import { useTheme } from "@/context/ThemeContext";
-import { updateWidget } from "@/services/widgetBridge";
 import {
   decrementCounter,
   incrementCounter,
   loadAppData,
 } from "@/storage/japStorage";
-import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
@@ -39,14 +38,12 @@ export default function JapScreen() {
   const [mantraName, setMantraName] = useState("Mantra");
   const [todaysTotal, setTodaysTotal] = useState(0);
 
-  const player = useAudioPlayer(require("@/assets/sounds/chime.mp3"));
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const countAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
     useCallback(() => {
-      setAudioModeAsync({ playsInSilentMode: true });
       load();
     }, []),
   );
@@ -71,13 +68,14 @@ export default function JapScreen() {
       (sum, c) => sum + c.lifetimeCount,
       0,
     );
-    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const playBell = async () => {
     try {
-      player.seekTo(0);
-      player.play();
+      const player = await Audio.Sound.createAsync(
+        require("@/assets/sounds/chime.mp3"),
+      );
+      await player.sound.playAsync();
     } catch {}
   };
 
@@ -141,7 +139,6 @@ export default function JapScreen() {
       (sum, c) => sum + c.lifetimeCount,
       0,
     );
-    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const handleDecrement = async () => {
@@ -169,7 +166,6 @@ export default function JapScreen() {
       (sum, c) => sum + c.lifetimeCount,
       0,
     );
-    updateWidget(data.todayTotal, lifetimeCount, data.streak.current);
   };
 
   const progress = dailyGoal > 0 ? Math.min(count / dailyGoal, 1) : 0;
