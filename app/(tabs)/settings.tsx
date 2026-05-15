@@ -17,6 +17,7 @@ import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -285,13 +286,13 @@ export default function SettingsScreen() {
                 styles.streakItem,
                 item.accent
                   ? {
-                      backgroundColor: theme.accent + "15",
-                      borderColor: theme.accent + "35",
-                    }
+                    backgroundColor: theme.accent + "15",
+                    borderColor: theme.accent + "35",
+                  }
                   : {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.ringTrack + "40",
-                    },
+                    backgroundColor: theme.surface,
+                    borderColor: theme.ringTrack + "40",
+                  },
               ]}
             >
               <Text style={styles.streakEmoji}>{item.emoji}</Text>
@@ -510,14 +511,19 @@ export default function SettingsScreen() {
               1.0.0
             </Text>
           </View>
-          <View style={[styles.row, { borderBottomColor: "transparent" }]}>
-            <Text style={[styles.rowLabel, { color: theme.text }]}>
-              Made with
-            </Text>
-            <Text style={[styles.rowValue, { color: theme.textMuted }]}>
-              ❤️ by Rohit
-            </Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("https://www.instagram.com/rohiiit.verma")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.row, { borderBottomColor: "transparent" }]}>
+              <Text style={[styles.rowLabel, { color: theme.text }]}>
+                Made with
+              </Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                ❤️ by Rohit
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />

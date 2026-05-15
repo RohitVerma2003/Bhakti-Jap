@@ -1,8 +1,9 @@
 import { useTheme } from "@/context/ThemeContext";
-import { loadAppData, saveAppData } from "@/storage/japStorage";
+import { computeLifetimeTotal, deleteCounter, loadAppData, saveAppData } from "@/storage/japStorage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   FlatList,
   KeyboardAvoidingView,
@@ -37,8 +38,7 @@ export default function index() {
   const [newMantraName, setNewMantraName] = useState("");
   const [newMantraGoal, setNewMantraGoal] = useState("108");
   const [todayTotal, setTodayTotal] = useState(0);
-
-  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [lifetimeTotal, setLifetimeTotal] = useState(0);
 
   const modalAnim = useRef(new Animated.Value(0)).current;
 
@@ -60,21 +60,43 @@ export default function index() {
     setActiveId(data.activeCounterId);
     setUserName(data.userName || "Seeker");
     setTodayTotal(data.todayTotal);
+    setLifetimeTotal(computeLifetimeTotal(data));
   };
 
   const setActiveCounter = async (id: string) => {
     const data = await loadAppData();
-
     if (data.activeCounterId !== id) {
       data.activeCounterId = id;
       await saveAppData(data);
     }
-
     setActiveId(id);
-
-    // 🔥 Navigate to Jap screen
     router.push("/jap");
   };
+
+  // ── Delete ──────────────────────────────────────────────────────────────────
+
+  const handleDeletePress = (counter: Counter) => {
+    Alert.alert(
+      `Delete "${counter.name}"?`,
+      "This will remove the counter. All your chants and history are fully preserved.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const updated = await deleteCounter(counter.id);
+            setCounters([...updated.counters]);
+            setActiveId(updated.activeCounterId);
+            setTodayTotal(updated.todayTotal);
+            setLifetimeTotal(computeLifetimeTotal(updated));
+          },
+        },
+      ],
+    );
+  };
+
+  // ── Add modal ───────────────────────────────────────────────────────────────
 
   const openModal = () => {
     setNewMantraName("");
@@ -99,10 +121,8 @@ export default function index() {
   const confirmAddCounter = async () => {
     if (!newMantraName.trim()) return;
     const data = await loadAppData();
-
     const id = `mantra_${Date.now()}`;
-
-    const today = new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
 
     data.counters.push({
       id,
@@ -110,20 +130,17 @@ export default function index() {
       dailyGoal: parseInt(newMantraGoal) || 108,
       currentCount: 0,
       lifetimeCount: 0,
-      lastUpdated: today,
+      lastUpdated: todayStr,
     });
 
     data.activeCounterId = id;
-
     await saveAppData(data);
 
     closeModal();
-
     setCounters([...data.counters]);
     setActiveId(id);
+    setLifetimeTotal(computeLifetimeTotal(data));
   };
-
-  const totalLifetime = counters.reduce((sum, c) => sum + c.lifetimeCount, 0);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -135,7 +152,9 @@ export default function index() {
   const getProgress = (c: Counter) =>
     c.dailyGoal > 0 ? Math.min(c.currentCount / c.dailyGoal, 1) : 0;
 
-  const renderItem = ({ item, index }: { item: Counter; index: number }) => {
+  // ── Render item ─────────────────────────────────────────────────────────────
+
+  const renderItem = ({ item }: { item: Counter }) => {
     const isActive = item.id === activeId;
     const progress = getProgress(item);
     const progressPercent = Math.round(progress * 100);
@@ -157,9 +176,7 @@ export default function index() {
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             {isActive && (
-              <View
-                style={[styles.activeDot, { backgroundColor: theme.accent }]}
-              />
+              <View style={[styles.activeDot, { backgroundColor: theme.accent }]} />
             )}
             <Text
               style={[
@@ -171,24 +188,38 @@ export default function index() {
               {item.name}
             </Text>
           </View>
-          <View
-            style={[
-              styles.goalPill,
-              {
-                backgroundColor: isActive
-                  ? theme.accent + "22"
-                  : theme.ringTrack + "40",
-              },
-            ]}
-          >
-            <Text
+
+          {/* Goal pill + delete button — both always visible */}
+          <View style={styles.cardActions}>
+            <View
               style={[
-                styles.goalPillText,
-                { color: isActive ? theme.accent : theme.textMuted },
+                styles.goalPill,
+                {
+                  backgroundColor: isActive
+                    ? theme.accent + "22"
+                    : theme.ringTrack + "40",
+                },
               ]}
             >
-              Goal {item.dailyGoal}
-            </Text>
+              <Text
+                style={[
+                  styles.goalPillText,
+                  { color: isActive ? theme.accent : theme.textMuted },
+                ]}
+              >
+                Goal {item.dailyGoal}
+              </Text>
+            </View>
+
+            {/* Always-visible delete button */}
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => handleDeletePress(item)}
+              // Prevent the card's onPress from firing when tapping delete
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.deleteBtnText}>🗑</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -219,41 +250,23 @@ export default function index() {
                 /{item.dailyGoal}
               </Text>
             </Text>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>
-              Today
-            </Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Today</Text>
           </View>
 
-          <View
-            style={[
-              styles.vertDivider,
-              { backgroundColor: theme.ringTrack + "60" },
-            ]}
-          />
+          <View style={[styles.vertDivider, { backgroundColor: theme.ringTrack + "60" }]} />
 
           <View style={styles.statBlock}>
-            <Text style={[styles.statValue, { color: theme.text }]}>
-              {malasToday}
-            </Text>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>
-              Malas
-            </Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{malasToday}</Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Malas</Text>
           </View>
 
-          <View
-            style={[
-              styles.vertDivider,
-              { backgroundColor: theme.ringTrack + "60" },
-            ]}
-          />
+          <View style={[styles.vertDivider, { backgroundColor: theme.ringTrack + "60" }]} />
 
           <View style={styles.statBlock}>
             <Text style={[styles.statValue, { color: theme.text }]}>
               {item.lifetimeCount.toLocaleString()}
             </Text>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>
-              Lifetime
-            </Text>
+            <Text style={[styles.statLabel, { color: theme.textMuted }]}>Lifetime</Text>
           </View>
 
           <View style={styles.progressPct}>
@@ -287,16 +300,9 @@ export default function index() {
           <Text style={[styles.greeting, { color: theme.textMuted }]}>
             {getGreeting()},
           </Text>
-          <Text style={[styles.userName, { color: theme.text }]}>
-            {userName}
-          </Text>
+          <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
         </View>
-        <View
-          style={[
-            styles.avatarCircle,
-            { backgroundColor: theme.accent + "25" },
-          ]}
-        >
+        <View style={[styles.avatarCircle, { backgroundColor: theme.accent + "25" }]}>
           <Text style={[styles.avatarLetter, { color: theme.accent }]}>
             {userName.charAt(0).toUpperCase()}
           </Text>
@@ -308,10 +314,7 @@ export default function index() {
         <View
           style={[
             styles.summaryCard,
-            {
-              backgroundColor: theme.accent + "15",
-              borderColor: theme.accent + "40",
-            },
+            { backgroundColor: theme.accent + "15", borderColor: theme.accent + "40" },
           ]}
         >
           <Text style={[styles.summaryValue, { color: theme.accent }]}>
@@ -325,14 +328,11 @@ export default function index() {
         <View
           style={[
             styles.summaryCard,
-            {
-              backgroundColor: theme.surface,
-              borderColor: theme.ringTrack + "60",
-            },
+            { backgroundColor: theme.surface, borderColor: theme.ringTrack + "60" },
           ]}
         >
           <Text style={[styles.summaryValue, { color: theme.text }]}>
-            {totalLifetime.toLocaleString()}
+            {lifetimeTotal.toLocaleString()}
           </Text>
           <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>
             Lifetime Total
@@ -342,9 +342,7 @@ export default function index() {
 
       {/* Section Title */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          Your Mantras
-        </Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Mantras</Text>
         <Text style={[styles.sectionCount, { color: theme.textMuted }]}>
           {counters.length} active
         </Text>
@@ -355,9 +353,9 @@ export default function index() {
         keyExtractor={(item) => item.id}
         extraData={counters}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true} // Android memory optimization
+        removeClippedSubviews={true}
         maxToRenderPerBatch={8}
         windowSize={10}
       />
@@ -368,12 +366,10 @@ export default function index() {
         onPress={openModal}
         activeOpacity={0.85}
       >
-        <Text style={[styles.addButtonText, { color: theme.background }]}>
-          +
-        </Text>
+        <Text style={[styles.addButtonText, { color: theme.background }]}>+</Text>
       </TouchableOpacity>
 
-      {/* Modal */}
+      {/* Add Mantra Modal */}
       <Modal
         visible={modalVisible}
         transparent
@@ -395,19 +391,13 @@ export default function index() {
               },
             ]}
           >
-            <View
-              style={[styles.modalHandle, { backgroundColor: theme.ringTrack }]}
-            />
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              New Mantra
-            </Text>
+            <View style={[styles.modalHandle, { backgroundColor: theme.ringTrack }]} />
+            <Text style={[styles.modalTitle, { color: theme.text }]}>New Mantra</Text>
             <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
               What mantra will you practice?
             </Text>
 
-            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-              Mantra Name
-            </Text>
+            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Mantra Name</Text>
             <TextInput
               style={[
                 styles.textInput,
@@ -425,9 +415,7 @@ export default function index() {
               returnKeyType="next"
             />
 
-            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-              Daily Goal
-            </Text>
+            <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Daily Goal</Text>
             <View style={styles.goalOptions}>
               {["108", "216", "324", "1008"].map((g) => (
                 <TouchableOpacity
@@ -438,19 +426,14 @@ export default function index() {
                       backgroundColor:
                         newMantraGoal === g ? theme.accent : theme.background,
                       borderColor:
-                        newMantraGoal === g
-                          ? theme.accent
-                          : theme.ringTrack + "80",
+                        newMantraGoal === g ? theme.accent : theme.ringTrack + "80",
                     },
                   ]}
                   onPress={() => setNewMantraGoal(g)}
                 >
                   <Text
                     style={{
-                      color:
-                        newMantraGoal === g
-                          ? theme.background
-                          : theme.textMuted,
+                      color: newMantraGoal === g ? theme.background : theme.textMuted,
                       fontSize: 14,
                       fontWeight: "500",
                     }}
@@ -492,9 +475,7 @@ export default function index() {
                 ]}
                 onPress={closeModal}
               >
-                <Text style={{ color: theme.textMuted, fontWeight: "500" }}>
-                  Cancel
-                </Text>
+                <Text style={{ color: theme.textMuted, fontWeight: "500" }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -522,9 +503,8 @@ export default function index() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
+  safeArea: { flex: 1 },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -533,52 +513,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
   },
-  greeting: {
-    fontSize: 13,
-    fontWeight: "400",
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetter: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 24,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderWidth: 1.5,
-  },
-  summaryValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-    marginBottom: 2,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    fontWeight: "400",
-    letterSpacing: 0.3,
-  },
+  greeting: { fontSize: 13, fontWeight: "400", letterSpacing: 0.3, marginBottom: 2 },
+  userName: { fontSize: 24, fontWeight: "600", letterSpacing: 0.2 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  avatarLetter: { fontSize: 18, fontWeight: "600" },
+
+  summaryRow: { flexDirection: "row", paddingHorizontal: 20, gap: 12, marginBottom: 24 },
+  summaryCard: { flex: 1, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 18, borderWidth: 1.5 },
+  summaryValue: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5, marginBottom: 2 },
+  summaryLabel: { fontSize: 12, fontWeight: "400", letterSpacing: 0.3 },
+
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -586,100 +530,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 10,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    letterSpacing: 0.2,
-  },
-  sectionCount: {
-    fontSize: 13,
-  },
-  card: {
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 12,
-    borderWidth: 1.5,
-  },
+  sectionTitle: { fontSize: 16, fontWeight: "500", letterSpacing: 0.2 },
+  sectionCount: { fontSize: 13 },
+
+  // ── Card ──
+  card: { borderRadius: 20, padding: 18, marginBottom: 12, borderWidth: 1.5 },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  cardTitleRow: {
-    flexDirection: "row",
+  cardTitleRow: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 },
+  activeDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 8 },
+  mantraName: { fontSize: 17, fontWeight: "500", letterSpacing: 0.1, flex: 1 },
+
+  cardActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+
+  goalPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  goalPillText: { fontSize: 12, fontWeight: "500" },
+
+  deleteBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#E5393514",
     alignItems: "center",
-    flex: 1,
-    marginRight: 10,
+    justifyContent: "center",
   },
-  activeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    marginRight: 8,
-  },
-  mantraName: {
-    fontSize: 17,
-    fontWeight: "500",
-    letterSpacing: 0.1,
-    flex: 1,
-  },
-  goalPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  goalPillText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    marginBottom: 14,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statBlock: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "600",
-    letterSpacing: -0.3,
-    marginBottom: 2,
-  },
-  statDivider: {
-    fontSize: 14,
-    fontWeight: "400",
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "400",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-  },
-  vertDivider: {
-    width: 1,
-    height: 32,
-    marginHorizontal: 4,
-  },
-  progressPct: {
-    paddingLeft: 12,
-    alignItems: "flex-end",
-  },
-  progressPctText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
+  deleteBtnText: { fontSize: 14 },
+
+  progressTrack: { height: 4, borderRadius: 2, marginBottom: 14, overflow: "hidden" },
+  progressFill: { height: 4, borderRadius: 2 },
+
+  statsRow: { flexDirection: "row", alignItems: "center" },
+  statBlock: { flex: 1, alignItems: "center" },
+  statValue: { fontSize: 18, fontWeight: "600", letterSpacing: -0.3, marginBottom: 2 },
+  statDivider: { fontSize: 14, fontWeight: "400" },
+  statLabel: { fontSize: 11, fontWeight: "400", letterSpacing: 0.3, textTransform: "uppercase" },
+  vertDivider: { width: 1, height: 32, marginHorizontal: 4 },
+  progressPct: { paddingLeft: 12, alignItems: "flex-end" },
+  progressPctText: { fontSize: 13, fontWeight: "600" },
+
   addButton: {
     position: "absolute",
     bottom: 30,
@@ -695,21 +587,11 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  addButtonText: {
-    fontSize: 30,
-    fontWeight: "300",
-    includeFontPadding: false,
-    textAlign: "center",
-  },
+  addButtonText: { fontSize: 30, fontWeight: "300", includeFontPadding: false, textAlign: "center" },
+
   // Modal
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
+  modalOverlay: { flex: 1, justifyContent: "flex-end" },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
   modalSheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -721,66 +603,15 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 20,
   },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-    opacity: 0.4,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 4,
-    letterSpacing: 0.1,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    marginBottom: 22,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1.5,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 16,
-    marginBottom: 18,
-  },
-  goalOptions: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 4,
-  },
-  goalChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    alignItems: "center",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 15,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-  cancelBtn: {
-    borderWidth: 1.5,
-  },
-  confirmBtn: {
-    borderWidth: 0,
-  },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 20, opacity: 0.4 },
+  modalTitle: { fontSize: 22, fontWeight: "700", marginBottom: 4, letterSpacing: 0.1 },
+  modalSubtitle: { fontSize: 14, marginBottom: 22 },
+  inputLabel: { fontSize: 12, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 },
+  textInput: { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, marginBottom: 18 },
+  goalOptions: { flexDirection: "row", gap: 10, marginBottom: 4 },
+  goalChip: { flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, alignItems: "center" },
+  modalButtons: { flexDirection: "row", gap: 12, marginTop: 8 },
+  modalBtn: { flex: 1, paddingVertical: 15, borderRadius: 18, alignItems: "center" },
+  cancelBtn: { borderWidth: 1.5 },
+  confirmBtn: { borderWidth: 0 },
 });

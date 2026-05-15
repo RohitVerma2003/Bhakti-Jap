@@ -1,4 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
+import { maybeRequestReview } from "@/services/reviewService";
 import {
   decrementCounter,
   incrementCounter,
@@ -128,6 +129,7 @@ export default function JapScreen() {
       playBell();
       flashGlow();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      maybeRequestReview();
     }
 
     setCount(active.currentCount);

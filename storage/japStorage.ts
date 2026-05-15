@@ -60,10 +60,6 @@ function createDefaultData(): JapAppData {
   };
 }
 
-function getTotalToday(data: JapAppData): number {
-  return data.counters.reduce((sum, c) => sum + c.currentCount, 0);
-}
-
 export async function loadAppData(): Promise<JapAppData> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
 
@@ -135,8 +131,25 @@ export async function decrementCounter(): Promise<JapAppData> {
   return data;
 }
 
-// Also fixed: yesterday calculation used toISOString() — same UTC bug.
-// Now uses local date arithmetic instead.
+export async function deleteCounter(id: string): Promise<JapAppData> {
+  const data = await loadAppData();
+
+  // Safety: if counter doesn't exist, return as-is
+  if (!data.counters.find((c) => c.id === id)) return data;
+
+  // Remove the counter
+  data.counters = data.counters.filter((c) => c.id !== id);
+
+  // Fix activeCounterId if the deleted counter was active
+  if (data.activeCounterId === id) {
+    data.activeCounterId =
+      data.counters.length > 0 ? data.counters[0].id : "not_active";
+  }
+
+  await saveAppData(data);
+  return data;
+}
+
 function updateStreakIfNeeded(data: JapAppData) {
   const todayDate = today();
 
@@ -203,4 +216,8 @@ export async function completeOnboarding() {
   const data = await loadAppData();
   data.onboardingDone = true;
   await saveAppData(data);
+}
+
+export function computeLifetimeTotal(data: JapAppData): number {
+  return Object.values(data.dailyHistory).reduce((sum, v) => sum + v, 0);
 }
